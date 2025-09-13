@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="order-detail-container">
+    <h1>Order Details</h1>
+    <div class="order-sections">
+        <!-- Order Summary Section -->
+        <div class="detail-section">
+            <h2>Order Summary</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="label">Order ID:</span>
+                    <span class="value">{{ order._id }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Status:</span>
+                    <span class="value status-badge status-{{ order.status|lower|replace(' ', '-') }}">{{ order.status }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Order Date:</span>
+                    <span class="value">{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Total Amount:</span>
+                    <span class="value">৳{{ "%.2f"|format(order.total|float) }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customer Information -->
+        <div class="detail-section">
+            <h2>Customer Information</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="label">Name:</span>
+                    <span class="value">{{ order.customer_name|default('Not available') }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Phone:</span>
+                    <span class="value">{{ order.customer_phone|default('Not available') }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Email:</span>
+                    <span class="value">{{ order.customer_email|default('Not available') }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Delivery Address:</span>
+                    <span class="value">{{ order.address|default('Not provided') }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delivery Information -->
+        {% if order.status in ['Out for Delivery', 'Delivered'] %}
+        <div class="detail-section">
+            <h2>Delivery Information</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="label">Delivery Person:</span>
+                    <span class="value">{{ order.delivery_name|default('Not assigned') }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Contact Number:</span>
+                    <span class="value">{{ order.delivery_phone|default('Not available') }}</span>
+                </div>
+                {% if order.status == 'Delivered' and order.delivery_date %}
+                <div class="info-item">
+                    <span class="label">Delivered On:</span>
+                    <span class="value">{{ order.delivery_date.strftime('%Y-%m-%d %H:%M') }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Order Items -->
+        <div class="detail-section">
+            <h2>Order Items</h2>
+            <div class="order-items">
+                {% for item in order.items %}
+                <div class="order-item">
+                    <div class="item-info">
+                        <span class="item-name">{{ item.name }}</span>
+                        <span class="item-price">৳{{ "%.2f"|format(item.price|float) }} × {{ item.quantity }}</span>
+                    </div>
+                    <div class="item-total">
+                        ৳{{ "%.2f"|format((item.price|float * item.quantity|int)) }}
+                    </div>
+                </div>
+                {% endfor %}
+                <div class="order-total">
+                    <span>Total:</span>
+                    <span>৳{{ "%.2f"|format(order.total|float) }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notes Section -->
+        <div class="detail-section">
+            <h2>Order Notes</h2>
+            <div class="notes-content">
+                {% if order.notes %}
+                <p>{{ order.notes }}</p>
+                {% else %}
+                <p class="no-notes">No special notes for this order.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.order-detail-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.order-sections {
+    display: grid;
+    gap: 2rem;
+}
+
+.detail-section {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.detail-section h2 {
+    color: #2d3748;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.label {
+    color: #718096;
+    font-size: 0.875rem;
+}
+
+.value {
+    color: #2d3748;
+    font-weight: 500;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.status-pending { background: #feebc8; color: #c05621; }
+.status-processing { background: #bee3f8; color: #2b6cb0; }
+.status-out-for-delivery { background: #c6f6d5; color: #2f855a; }
+.status-delivered { background: #c6f6d5; color: #2f855a; }
+.status-cancelled { background: #fed7d7; color: #c53030; }
+
+.order-items {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.order-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: #f7fafc;
+    border-radius: 8px;
+}
+
+.item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.item-name {
+    font-weight: 500;
+    color: #2d3748;
+}
+
+.item-price {
+    color: #718096;
+    font-size: 0.875rem;
+}
+
+.item-total {
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.order-total {
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem;
+    margin-top: 1rem;
+    border-top: 2px solid #e2e8f0;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.notes-content {
+    background: #f7fafc;
+    padding: 1rem;
+    border-radius: 8px;
+}
+
+.no-notes {
+    color: #718096;
+    font-style: italic;
+}
+
+@media (max-width: 768px) {
+    .order-detail-container {
+        padding: 1rem;
+    }
+    
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .order-item {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+    }
+}
+</style>
+{% endblock %}

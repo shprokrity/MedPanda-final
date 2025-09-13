@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12 mb-4">
+            <a href="{{ url_for('delivery_view') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Delivery List
+            </a>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3>Delivery Personnel Details</h3>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Name:</strong> {{ delivery.name }}</p>
+                    <p><strong>Email:</strong> {{ delivery.email }}</p>
+                    <p><strong>Phone:</strong> {{ delivery.phone if delivery.phone else 'N/A' }}</p>
+                    <p><strong>License Number:</strong> {{ delivery.license_number if delivery.license_number else 'N/A' }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Current Location:</strong> {{ delivery.current_location if delivery.current_location else 'N/A' }}</p>
+                    <p>
+                        <strong>Availability:</strong>
+                        <span class="badge {% if delivery.is_available %}badge-success{% else %}badge-warning{% endif %}">
+                            {{ 'Available' if delivery.is_available else 'Busy' }}
+                        </span>
+                    </p>
+                    <p>
+                        <strong>Status:</strong>
+                        <span class="badge {% if delivery.is_active %}badge-success{% else %}badge-danger{% endif %}">
+                            {{ 'Active' if delivery.is_active else 'Inactive' }}
+                        </span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3>Assigned Orders</h3>
+        </div>
+        <div class="card-body">
+            {% if assigned_orders %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Customer</th>
+                            <th>Status</th>
+                            <th>Delivery Address</th>
+                            <th>Order Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in assigned_orders %}
+                        <tr>
+                            <td>{{ order._id }}</td>
+                            <td>{{ order.customer_name }}</td>
+                            <td>
+                                <span class="badge badge-{{ order.status }}">
+                                    {{ order.status|title }}
+                                </span>
+                            </td>
+                            <td>{{ order.delivery_address }}</td>
+                            <td>{{ order.order_date }}</td>
+                            <td>
+                                <a href="{{ url_for('view_order', order_id=order._id) }}" class="btn btn-info btn-sm">
+                                    <i class="fas fa-eye"></i> View Order
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted">No orders currently assigned to this delivery personnel.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

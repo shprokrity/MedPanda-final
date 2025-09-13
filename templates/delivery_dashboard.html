@@ -1,0 +1,982 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+/* Profile Rating Styles */
+.profile-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+.profile-rating-section {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.rating-summary {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+.rating-stars {
+    font-size: 1.5rem;
+    color: #ffc107;
+}
+
+.rating-numbers {
+    display: flex;
+    flex-direction: column;
+}
+
+.rating-average {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #2d3748;
+}
+
+.rating-count {
+    color: #718096;
+    font-size: 0.9rem;
+}
+
+
+
+.text-warning {
+    color: #ffc107 !important;
+}
+
+.text-muted {
+    color: #cbd5e0 !important;
+}
+
+@media (max-width: 768px) {
+    .profile-info {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <h1>Delivery Dashboard</h1>
+    <p>Welcome, {{ delivery_profile.name }}! Here are your delivery assignments.</p>
+
+    <!-- Pending Delivery Requests Section -->
+    {% if pending_requests %}
+    <div class="section">
+        <h2>📬 New Delivery Requests ({{ pending_requests|length }})</h2>
+        <div class="requests-grid">
+            {% for delivery_request in pending_requests %}
+            <div class="request-card">
+                <div class="request-header">
+                    <h3>Delivery Request #{{ loop.index }}</h3>
+                    <span class="badge badge-pending">Pending</span>
+                </div>
+                
+                <div class="request-details">
+                    <p><strong>💰 Order Total:</strong> ৳{{ delivery_request.order_details.total|default(0) }}</p>
+                    <p><strong>📦 Items:</strong> {{ delivery_request.order_details.items_count|default(0) }} items</p>
+                    <p><strong>📍 Delivery Address:</strong> {{ delivery_request.order_details.address|default('Address not available') }}</p>
+                    <p><strong>⏰ Requested:</strong> 
+                        {% if delivery_request.requested_at %}
+                            {{ delivery_request.requested_at.strftime('%Y-%m-%d %H:%M') }}
+                        {% else %}
+                            Recently
+                        {% endif %}
+                    </p>
+                </div>
+                
+                <div class="request-actions">
+                    <form action="{{ url_for('accept_delivery', request_id=delivery_request._id) }}" method="POST" 
+                          onsubmit="return confirm('Accept this delivery request?');">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-check-circle"></i> Accept Delivery
+                        </button>
+                    </form>
+                    <form action="{{ url_for('reject_delivery', request_id=delivery_request._id) }}" method="POST"
+                          onsubmit="return confirm('Reject this delivery request?');">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-times-circle"></i> Reject
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Assigned Orders Section -->
+    <div class="section">
+        <h2>🚚 Active Deliveries ({{ assigned_orders|length }})</h2>
+        
+        {% if assigned_orders %}
+        <div class="orders-grid">
+            {% for order in assigned_orders %}
+            <div class="order-card">
+                <div class="order-header">
+                    <span class="order-id">Order #{{ order._id|string|truncate(8, True, '') }}</span>
+                    <span class="status-badge status-{{ order.status|lower|replace(' ', '-') }}">
+                        {{ order.status }}
+                    </span>
+                </div>
+                
+                <div class="order-details">
+                    <p><strong>💰 Total:</strong> ৳{{ order.total|default(0) }}</p>
+                    <p><strong>📍 Address:</strong> {{ order.address|default('Address not available') }}</p>
+                    <p><strong>📦 Items:</strong> {{ order.items_count|default(0) }} items</p>
+                    <p><strong>📅 Order Date:</strong> {{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                </div>
+                
+                <div class="order-actions">
+                    <a href="{{ url_for('order_detail', order_id=order._id) }}" class="btn btn-primary">
+                        <i class="fas fa-eye"></i> View Details
+                    </a>
+                    {% if order.status == 'Out for Delivery' %}
+                    <form action="{{ url_for('complete_delivery', order_id=order._id) }}" method="POST"
+                          onsubmit="return confirm('Mark this delivery as completed?');">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-check"></i> Mark Delivered
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-truck"></i>
+            <p>No active deliveries assigned to you.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Completed Orders Section -->
+    <div class="section">
+        <h2>✅ Completed Deliveries ({{ completed_orders|length }})</h2>
+        
+        {% if completed_orders %}
+        <div class="orders-grid">
+            {% for order in completed_orders %}
+            <div class="order-card completed">
+                <div class="order-header">
+                    <span class="order-id">Order #{{ order._id|string|truncate(8, True, '') }}</span>
+                    <span class="status-badge status-delivered">Delivered</span>
+                </div>
+                
+                <div class="order-details">
+                    <p><strong>💰 Total:</strong> ৳{{ order.total|default(0) }}</p>
+                    <p><strong>📍 Address:</strong> {{ order.address|default('Address not available') }}</p>
+                    <p><strong>📅 Delivered:</strong> 
+                        {% if order.updated_at %}
+                            {{ order.updated_at.strftime('%Y-%m-%d %H:%M') }}
+                        {% else %}
+                            {{ order.created_at.strftime('%Y-%m-%d %H:%M') }}
+                        {% endif %}
+                    </p>
+                </div>
+                
+                <div class="order-actions">
+                    <a href="{{ url_for('order_detail', order_id=order._id) }}" class="btn btn-secondary">
+                        <i class="fas fa-eye"></i> View Details
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-clipboard-check"></i>
+            <p>No completed deliveries yet.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Delivery Profile Status -->
+    <div class="section">
+        <h2>👤 Delivery Profile</h2>
+        {% if delivery_profile %}
+        <div class="profile-card">
+            <div class="profile-info">
+                <div class="profile-basic-info">
+                    <p><strong>🆔 Delivery Man ID:</strong> {{ delivery_profile._id|default('N/A') }}</p>
+                    <p><strong>👤 Name:</strong> {{ delivery_profile.name|default('Not provided') }}</p>
+                    <p><strong>📞 Phone Number:</strong> {{ delivery_profile.phone|default('Not provided') }}</p>
+                    <p><strong>📍 Area:</strong> {{ delivery_profile.current_location|default('Not specified') }}</p>
+                    <p><strong>🚗 Vehicle Type:</strong> {{ delivery_profile.vehicle_type|default('Not specified') }}</p>
+                    <p><strong>🪪 License Number:</strong> {{ delivery_profile.license_number|default('Not provided') }}</p>
+                    <p><strong>🟢 Status:</strong> 
+                        <span class="status-badge {% if delivery_profile.is_available %}status-available{% else %}status-busy{% endif %}">
+                            {% if delivery_profile.is_available %}Available{% else %}On Delivery{% endif %}
+                        </span>
+                    </p>
+                </div>
+
+                <div class="profile-rating-section">
+                    <div class="rating-summary">
+                        <div class="rating-stars">
+                            {% set rating = delivery_profile.rating_avg|default(0) %}
+                            {% for i in range(5) %}
+                                <i class="fas fa-star {% if i < rating %}text-warning{% else %}text-muted{% endif %}"></i>
+                            {% endfor %}
+                        </div>
+                        <div class="rating-numbers">
+                            <span class="rating-average">{{ "%.1f"|format(rating) }}/5</span>
+                            <span class="rating-count">({{ delivery_profile.rating_count|default(0) }} {{ 'review' if delivery_profile.rating_count == 1 else 'reviews' }})</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Edit Profile Button -->
+            <div class="profile-actions">
+                <button onclick="openEditModal()" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Edit Profile
+                </button>
+<!--         <div style="margin-top: 10px;">
+                    <button onclick="testModal()" class="btn btn-secondary">Test Modal</button>
+                    <button onclick='console.log("Delivery profile:", {{ delivery_profile|tojson }})' class="btn btn-secondary">Debug Profile</button> 
+            </div> -->
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p>Delivery profile not found. Please contact support.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Edit Profile Modal -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeEditModal()">&times;</span>
+        <h2>Edit Delivery Profile</h2>
+        
+        <form action="{{ url_for('delivery_dashboard') }}" method="POST">
+            <div class="form-group">
+                <label for="name">Full Name:</label>
+                <input type="text" id="name" name="name" value="{{ delivery_profile.name }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="phone">Phone Number:</label>
+                <input type="text" id="phone" name="phone" value="{{ delivery_profile.phone }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="vehicle_type">Vehicle Type:</label>
+                <select id="vehicle_type" name="vehicle_type" required>
+                    <option value="Bike" {% if delivery_profile.vehicle_type == 'Bike' %}selected{% endif %}>Bike</option>
+                    <option value="Motorcycle" {% if delivery_profile.vehicle_type == 'Motorcycle' %}selected{% endif %}>Motorcycle</option>
+                    <option value="Car" {% if delivery_profile.vehicle_type == 'Car' %}selected{% endif %}>Car</option>
+                    <option value="Van" {% if delivery_profile.vehicle_type == 'Van' %}selected{% endif %}>Van</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="license_number">License Number:</label>
+                <input type="text" id="license_number" name="license_number" value="{{ delivery_profile.license_number }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="current_location">Current Location/Area:</label>
+                <input type="text" id="current_location" name="current_location" value="{{ delivery_profile.current_location }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="is_available">Availability Status:</label>
+                <select id="is_available" name="is_available">
+                    <option value="true" {% if delivery_profile.is_available %}selected{% endif %}>Available</option>
+                    <option value="false" {% if not delivery_profile.is_available %}selected{% endif %}>Not Available</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="closeEditModal()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.dashboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.section {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.section h2 {
+    color: #2d3748;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 0.5rem;
+}
+
+.requests-grid,
+.orders-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.request-card,
+.order-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.request-card:hover,
+.order-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.order-card.completed {
+    background: #f0fff4;
+    border-color: #9ae6b4;
+}
+
+.request-header,
+.order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.request-header h3,
+.order-id {
+    color: #2d3748;
+    font-weight: 600;
+    margin: 0;
+}
+
+.request-details p,
+.order-details p {
+    margin: 0.5rem 0;
+    color: #4a5568;
+}
+
+.request-actions,
+.order-actions {
+    display: flex;
+    gap: 0.8rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.profile-actions {
+    margin-top: 1.5rem;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 1rem;
+}
+
+.badge {
+    padding: 0.3rem 0.8rem;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.status-badge {
+    padding: 0.3rem 0.8rem;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.status-pending {
+    background: #fed7d7;
+    color: #c53030;
+}
+
+.status-processing {
+    background: #feebcb;
+    color: #d69e2e;
+}
+
+.status-ready-for-delivery {
+    background: #bee3f8;
+    color: #3182ce;
+}
+
+.status-out-for-delivery {
+    background: #bee3f8;
+    color: #3182ce;
+}
+
+.status-delivered {
+    background: #c6f6d5;
+    color: #38a169;
+}
+
+.status-cancelled {
+    background: #e2e8f0;
+    color: #4a5568;
+}
+
+.status-available {
+    background: #c6f6d5;
+    color: #38a169;
+}
+
+.status-busy {
+    background: #fed7d7;
+    color: #c53030;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 5% auto;
+    padding: 2rem;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 500px;
+    position: relative;
+    z-index: 10000;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.close {
+    position: absolute;
+    right: 1rem;
+    top: 0.5rem;
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover {
+    color: black;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #cbd5e0;
+    border-radius: 6px;
+    font-size: 1rem;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+}
+
+.btn {
+    padding: 0.6rem 1.2rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: all 0.2s ease;
+}
+
+.btn-primary {
+    background: #667eea;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #5a67d8;
+}
+
+.btn-success {
+    background: #48bb78;
+    color: white;
+}
+
+.btn-success:hover {
+    background: #38a169;
+}
+
+.btn-danger {
+    background: #f56565;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #e53e3e;
+}
+
+.btn-secondary {
+    background: #718096;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #4a5568;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 1rem;
+    }
+
+    .requests-grid,
+    .orders-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .request-actions,
+    .order-actions {
+        flex-direction: column;
+    }
+
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .request-header,
+    .order-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .modal-content {
+        margin: 10% auto;
+        width: 95%;
+        padding: 1.5rem;
+    }
+
+    .form-actions {
+        flex-direction: column;
+    }
+}
+</style>
+
+<script>
+function openEditModal() {
+    document.getElementById('editModal').style.display = 'block';
+}
+
+function closeEditModal() {
+    document.getElementById('editModal').style.display = 'none';
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    var modal = document.getElementById('editModal');
+    if (event.target == modal) {
+        closeEditModal();
+    }
+}
+</script>
+<style>
+.dashboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.section {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.section h2 {
+    color: #2d3748;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 0.5rem;
+}
+
+.requests-grid, .orders-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.request-card, .order-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.request-card:hover, .order-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.order-card.completed {
+    background: #f0fff4;
+    border-color: #9ae6b4;
+}
+
+.request-header, .order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.request-header h3, .order-id {
+    color: #2d3748;
+    font-weight: 600;
+    margin: 0;
+}
+
+.request-details p, .order-details p {
+    margin: 0.5rem 0;
+    color: #4a5568;
+}
+
+.request-actions, .order-actions {
+    display: flex;
+    gap: 0.8rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.profile-actions {
+    margin-top: 1.5rem;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 1rem;
+}
+
+.badge {
+    padding: 0.3rem 0.8rem;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.badge-pending {
+    background: #feebcb;
+    color: #d69e2e;
+}
+
+.status-badge {
+    padding: 0.3rem 0.8rem;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.status-pending {
+    background: #fed7d7;
+    color: #c53030;
+}
+
+.status-processing {
+    background: #feebcb;
+    color: #d69e2e;
+}
+
+.status-ready-for-delivery {
+    background: #bee3f8;
+    color: #3182ce;
+}
+
+.status-out-for-delivery {
+    background: #bee3f8;
+    color: #3182ce;
+}
+
+.status-delivered {
+    background: #c6f6d5;
+    color: #38a169;
+}
+
+.status-cancelled {
+    background: #e2e8f0;
+    color: #4a5568;
+}
+
+.status-available {
+    background: #c6f6d5;
+    color: #38a169;
+}
+
+.status-busy {
+    background: #fed7d7;
+    color: #c53030;
+}
+
+.btn {
+    padding: 0.6rem 1.2rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: all 0.2s ease;
+}
+
+.btn-primary {
+    background: #667eea;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #5a67d8;
+}
+
+.btn-success {
+    background: #48bb78;
+    color: white;
+}
+
+.btn-success:hover {
+    background: #38a169;
+}
+
+.btn-danger {
+    background: #f56565;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #e53e3e;
+}
+
+.btn-secondary {
+    background: #718096;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #4a5568;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: #718096;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: #cbd5e0;
+}
+
+.empty-state p {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.profile-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 1.5rem;
+}
+
+.profile-info p {
+    margin: 0.8rem 0;
+    color: #4a5568;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 5% auto;
+    padding: 2rem;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 500px;
+    position: relative;
+    z-index: 10000;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    position: absolute;
+    right: 1rem;
+    top: 0.5rem;
+}
+
+.close:hover {
+    color: black;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #cbd5e0;
+    border-radius: 6px;
+    font-size: 1rem;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 1rem;
+    }
+    
+    .requests-grid, .orders-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .request-actions, .order-actions {
+        flex-direction: column;
+    }
+    
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .request-header, .order-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .modal-content {
+        margin: 10% auto;
+        width: 95%;
+        padding: 1.5rem;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    .modal {
+        z-index: 9999 !important;  /* Higher than nav */
+    }
+
+    .modal-content {
+        z-index: 10000 !important; /* Even higher */
+    }
+}
+</style>
+
+<script>
+console.log('Delivery dashboard JavaScript loaded');
+
+function openEditModal() {
+    console.log('openEditModal called');
+    var modal = document.getElementById('editModal');
+    console.log('Modal element:', modal);
+    if (modal) {
+        modal.style.display = 'block';
+        console.log('Modal should be visible now');
+    } else {
+        console.error('Modal element not found!');
+    }
+}
+
+function closeEditModal() {
+    console.log('closeEditModal called');
+    document.getElementById('editModal').style.display = 'none';
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('editModal');
+    if (event.target === modal) {
+        closeEditModal();
+    }
+}
+
+// Ensure functions are available globally
+window.openEditModal = openEditModal;
+window.closeEditModal = closeEditModal;
+</script>
+{% endblock %}

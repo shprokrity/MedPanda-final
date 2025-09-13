@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="customer-view-container">
+    <div class="header">
+        <h2>Customer Management</h2>
+        <a href="{{ url_for('admin_dashboard') }}" class="back-btn">
+            <i class="fas fa-arrow-left"></i> Back to Admin Dashboard
+        </a>
+    </div>
+
+    <div class="customers-list">
+        <table class="customer-table">
+            <thead>
+                <tr>
+                    <th>Customer ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Orders</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for customer in customers %}
+                <tr>
+                    <td>{{ customer._id|string|truncate(8, True, '') }}</td>
+                    <td>{{ customer.name }}</td>
+                    <td>{{ customer.email }}</td>
+                    <td>{{ customer.order_count }} orders</td>
+                    <td>
+                        <span class="status-badge {{ 'active' if customer.is_active else 'inactive' }}">
+                            {{ 'Active' if customer.is_active else 'Inactive' }}
+                        </span>
+                    </td>
+                    <td class="actions">
+                        <a href="{{ url_for('admin_view_customer_dashboard', user_id=customer._id) }}" class="btn btn-view">
+                            <i class="fas fa-eye"></i> View Orders
+                        </a>
+                        <button onclick="toggleUser('{{ customer._id }}')" class="btn {{ 'btn-deactivate' if customer.is_active else 'btn-activate' }}">
+                            {{ 'Deactivate' if customer.is_active else 'Activate' }}
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+    .customer-view-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+    }
+
+    .back-btn {
+        padding: 8px 16px;
+        background: #4a5568;
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: background 0.3s;
+    }
+
+    .back-btn:hover {
+        background: #2d3748;
+    }
+
+    .customer-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .customer-table th,
+    .customer-table td {
+        padding: 12px 16px;
+        text-align: left;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .customer-table th {
+        background: #f7fafc;
+        font-weight: 600;
+        color: #4a5568;
+    }
+
+    .status-badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    .status-badge.active {
+        background: #c6f6d5;
+        color: #2f855a;
+    }
+
+    .status-badge.inactive {
+        background: #fed7d7;
+        color: #c53030;
+    }
+
+    .actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .btn {
+        padding: 6px 12px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        transition: background 0.3s;
+    }
+
+    .btn-view {
+        background: #4299e1;
+        color: white;
+    }
+
+    .btn-view:hover {
+        background: #3182ce;
+    }
+
+    .btn-deactivate {
+        background: #fc8181;
+        color: white;
+    }
+
+    .btn-deactivate:hover {
+        background: #f56565;
+    }
+
+    .btn-activate {
+        background: #68d391;
+        color: white;
+    }
+
+    .btn-activate:hover {
+        background: #48bb78;
+    }
+
+    @media (max-width: 768px) {
+        .customer-table {
+            font-size: 14px;
+        }
+
+        .actions {
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+
+<script>
+function toggleUser(userId) {
+    fetch('/admin/toggle_user/' + userId, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.ok) {
+            location.reload();
+        } else {
+            alert('Failed to update user status');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred');
+    });
+}
+</script>
+{% endblock %}

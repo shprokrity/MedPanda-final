@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <h1>Welcome to MedPanda</h1>
+    <p>Your trusted online pharmacy for quick and reliable medicine delivery.</p>
+
+    <!-- Quick Search Form -->
+    <form action="{{ url_for('search') }}" method="GET" class="quick-search">
+        <input type="text" name="q" placeholder="Search for medicines, categories, or symptoms..." value="{{ request.args.get('q', '') }}">
+        <button type="submit"><i class="fas fa-search"></i> Search</button>
+    </form>
+</div>
+
+<h2>Featured Medicines</h2>
+<div class="catalog">
+    {% for medicine in meds %}
+    <div class="card">
+        <div class="medicine-image">
+            {% if medicine.image_path %}
+                <img src="/static/{{ medicine.image_path }}" alt="{{ medicine.name }}">
+            {% else %}
+                {% if medicine.category and medicine.category.lower() in ['pain relief', 'painkillers'] %}
+                    <img src="/static/images/categories/pain-relief.png" alt="Pain Relief">
+                {% elif medicine.category and medicine.category.lower() in ['vitamins', 'supplements'] %}
+                    <img src="/static/images/categories/vitamins.png" alt="Vitamins">
+                {% elif medicine.category and medicine.category.lower() in ['antibiotics'] %}
+                    <img src="/static/images/categories/antibiotics.png" alt="Antibiotics">
+                {% elif medicine.category and medicine.category.lower() in ['first aid'] %}
+                    <img src="/static/images/categories/first-aid.png" alt="First Aid">
+                {% elif medicine.category and medicine.category.lower() in ['skincare'] %}
+                    <img src="/static/images/categories/skincare.png" alt="Skincare">
+                {% else %}
+                    <img src="/static/images/categories/medicine-default.png" alt="Medicine">
+                {% endif %}
+            {% endif %}
+        </div>
+        <div class="medicine-info">
+            <h3>{{ medicine.name }}</h3>
+            <p class="category">{{ medicine.category }}</p>
+            <p class="price">Price: ৳{{ "%.2f"|format(medicine.price) }}</p>
+            <p class="stock">In stock: {{ medicine.stock }}</p>
+            
+            <form action="{{ url_for('cart_add') }}" method="POST" class="add-to-cart-form">
+                <input type="hidden" name="med_id" value="{{ medicine._id }}">
+                <div class="quantity-control">
+                    <label for="qty-{{ medicine._id }}">Qty:</label>
+                    <input type="number" name="qty" id="qty-{{ medicine._id }}" value="1" min="1" max="{{ medicine.stock }}">
+                </div>
+                <button type="submit" class="btn-add-cart">
+                    <i class="fas fa-cart-plus"></i> Add to Cart
+                </button>
+            </form>
+        </div>
+    </div>
+    {% else %}
+    <p class="no-medicines">No featured medicines available at the moment.</p>
+    {% endfor %}
+</div>
+
+<!-- Browse by Category -->
+<h2>Browse by Category</h2>
+<div class="categories">
+    {% set categories = ['Pain Relief', 'Vitamins', 'Antibiotics', 'First Aid', 'Skincare'] %}
+    {% for category in categories %}
+        <a href="{{ url_for('search') }}?category={{ category }}" class="category-tag">{{ category }}</a>
+    {% endfor %}
+</div>
+{% endblock %}

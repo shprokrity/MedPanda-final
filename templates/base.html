@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedPanda - Your Medical Companion</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/medicine-catalog.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    {% block head %}{% endblock %}
+    {% block head_extra %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav>
+        <div class="nav-brand">
+            <a href="{{ url_for('index') }}" class="brand-link">
+                <i class="fas fa-paw"></i> MedPanda
+            </a>
+        </div>
+        
+        <div class="nav-links">
+            <a href="{{ url_for('index') }}"><i class="fas fa-home"></i> Home</a>
+            <a href="{{ url_for('search') }}"><i class="fas fa-search"></i> Search</a>
+            {% if session.get('user') %}
+            <a href="{{ url_for('schedules') }}"><i class="fas fa-calendar"></i> Schedule</a>
+            <a href="{{ url_for('complain') }}" class="complain-link"><i class="fas fa-exclamation-circle"></i> Complain</a>
+            {% endif %}
+            <a href="{{ url_for('cart_view') }}" class="cart-link">
+                <i class="fas fa-shopping-cart"></i> Cart
+                {% if session.get('cart') and session.cart is mapping %}
+                <span class="cart-count-badge">{{ session.cart.values()|sum }}</span>
+                {% endif %}
+            </a>
+            
+            {% if session.get('user') %}
+                <!-- Dashboard Link -->
+                {% if session.user.role == 'user' %}
+                    <a href="{{ url_for('user_dashboard') }}"><i class="fas fa-user"></i> Dashboard</a>
+                {% elif session.user.role == 'pharmacy' %}
+                    <a href="{{ url_for('pharmacy_dashboard') }}"><i class="fas fa-clinic-medical"></i> Dashboard</a>
+                {% elif session.user.role == 'delivery' %}
+                    <a href="{{ url_for('delivery_dashboard') }}"><i class="fas fa-truck"></i> Dashboard</a>
+                {% elif session.user.role == 'admin' %}
+                    <a href="{{ url_for('admin_dashboard') }}"><i class="fas fa-crown"></i> Dashboard</a>
+                {% endif %}
+                
+                <a href="{{ url_for('orders_list') }}"><i class="fas fa-shopping-bag"></i> Orders</a>
+                <a href="{{ url_for('schedules') }}"><i class="fas fa-clock"></i> Schedule</a>
+            {% endif %}
+        </div>
+        
+        <div class="nav-auth">
+            {% if session.get('user') %}
+                <span class="user-welcome"><i class="fas fa-user-circle"></i> Hello, {{ session.user.name }}</span>
+                <a href="{{ url_for('logout') }}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            {% else %}
+                <a href="{{ url_for('login') }}" class="login-btn"><i class="fas fa-sign-in-alt"></i> Login</a>
+                <a href="{{ url_for('register') }}" class="register-btn"><i class="fas fa-user-plus"></i> Register</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        <i class="fas {% if category == 'success' %}fa-check-circle{% elif category == 'danger' %}fa-exclamation-circle{% elif category == 'warning' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %}"></i>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2025 MedPanda. All rights reserved.</p>
+            <div class="footer-links">
+                <a href="#"><i class="fab fa-facebook"></i></a>
+                <a href="#"><i class="fab fa-twitter"></i></a>
+                <a href="#"><i class="fab fa-instagram"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
+
+<style>
+/* Navigation Styles */
+nav {
+    background: white;
+    padding: 1rem 2rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.nav-brand, .nav-links, .nav-auth {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.brand-link {
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: #667eea !important;
+    text-decoration: none;
+}
+
+.brand-link:hover {
+    color: #5a67d8 !important;
+}
+
+nav a {
+    text-decoration: none;
+    color: #4a5568;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    position: relative;
+}
+
+nav a:hover {
+    background-color: #f7fafc;
+    color: #667eea;
+}
+
+.user-welcome {
+    color: #4a5568;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+}
+
+/* Cart badge */
+.cart-link {
+    position: relative;
+}
+
+.cart-count-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #e53e3e;
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+/* Auth buttons */
+.login-btn, .register-btn, .logout-btn {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+}
+
+.login-btn {
+    background: #f7fafc;
+    color: #4a5568 !important;
+    border: 1px solid #e2e8f0;
+}
+
+.login-btn:hover {
+    background: #edf2f7;
+    color: #2d3748 !important;
+}
+
+.register-btn {
+    background: #667eea;
+    color: white !important;
+}
+
+.register-btn:hover {
+    background: #5a67d8;
+    color: white !important;
+}
+
+.logout-btn {
+    background: #f56565;
+    color: white !important;
+}
+
+.logout-btn:hover {
+    background: #e53e3e;
+    color: white !important;
+}
+
+/* Flash Messages */
+.flash-messages {
+    position: fixed;
+    top: 100px;
+    right: 20px;
+    z-index: 1001;
+    max-width: 400px;
+}
+
+.alert {
+    padding: 1rem 1.5rem;
+    margin-bottom: 0.5rem;
+    border-radius: 8px;
+    border: none;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    animation: slideInRight 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.alert::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 4px;
+}
+
+.alert-success {
+    background: rgba(72, 187, 120, 0.95);
+    color: white;
+}
+
+.alert-success::before {
+    background: #38a169;
+}
+
+.alert-danger {
+    background: rgba(245, 101, 101, 0.95);
+    color: white;
+}
+
+.alert-danger::before {
+    background: #e53e3e;
+}
+
+.alert-info {
+    background: rgba(102, 126, 234, 0.95);
+    color: white;
+}
+
+.alert-info::before {
+    background: #667eea;
+}
+
+.alert-warning {
+    background: rgba(246, 173, 85, 0.95);
+    color: white;
+}
+
+.alert-warning::before {
+    background: #ed8936;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Container */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    min-height: calc(100vh - 160px);
+}
+
+/* Footer */
+footer {
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    text-align: center;
+    padding: 2rem;
+    margin-top: auto;
+}
+
+footer p {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.footer-links {
+    display: flex;
+    gap: 1rem;
+}
+
+.footer-links a {
+    color: white;
+    font-size: 1.2rem;
+    transition: opacity 0.2s ease;
+}
+
+.footer-links a:hover {
+    opacity: 0.8;
+}
+
+/* Icons */
+i {
+    margin-right: 0.5rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    nav {
+        padding: 1rem;
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .nav-brand, .nav-links, .nav-auth {
+        justify-content: center;
+    }
+    
+    nav a {
+        margin: 0.25rem 0;
+    }
+    
+    .flash-messages {
+        left: 20px;
+        right: 20px;
+        max-width: none;
+    }
+    
+    .container {
+        padding: 15px;
+    }
+    
+    .footer-content {
+        flex-direction: column;
+        gap: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    nav {
+        gap: 0.5rem;
+    }
+    
+    nav a {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.9rem;
+    }
+    
+    .alert {
+        padding: 0.8rem;
+        font-size: 0.9rem;
+    }
+}
+</style>

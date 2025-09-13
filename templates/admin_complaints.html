@@ -1,0 +1,427 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    .complaints-container {
+        padding: 2rem;
+        background-color: rgba(255, 255, 255, 0.95);
+        min-height: calc(100vh - 100px);
+        border-radius: 15px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        margin: 20px;
+    }
+
+    @media (min-width: 1400px) {
+        .complaints-container {
+            margin: 20px auto;
+            max-width: 1400px;
+        }
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .page-header h2 {
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .complaints-table {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+    }
+
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 0;
+    }
+
+    .table th,
+    .table td {
+        padding: 1rem;
+        text-align: left;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .table th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.5px;
+        color: #495057;
+    }
+
+    .table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .table tbody tr:hover {
+        background-color: #f8f9fa;
+        transition: background-color 0.2s ease;
+    }
+
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-transform: capitalize;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+    }
+
+    .status-pending {
+        background-color: rgba(255, 169, 0, 0.1);
+        color: #ffa900;
+        border: 1px solid rgba(255, 169, 0, 0.2);
+    }
+
+    .status-resolved {
+        background-color: rgba(0, 183, 74, 0.1);
+        color: #00b74a;
+        border: 1px solid rgba(0, 183, 74, 0.2);
+    }
+
+    .status-investigating {
+        background-color: rgba(102, 126, 234, 0.1);
+        color: #667eea;
+        border: 1px solid rgba(102, 126, 234, 0.2);
+    }
+
+    .status-dismissed {
+        background-color: rgba(249, 49, 84, 0.1);
+        color: #f93154;
+        border: 1px solid rgba(249, 49, 84, 0.2);
+    }
+
+    .btn-action {
+        padding: 0.4rem 0.8rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        transition: all 0.2s ease;
+        border: none;
+        cursor: pointer;
+    }
+
+    .btn-view {
+        background-color: #667eea;
+        color: white;
+    }
+
+    .btn-view:hover {
+        background-color: #764ba2;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #6c757d;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: #adb5bd;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="complaints-container">
+    <div class="page-header">
+        <h2><i class="fas fa-exclamation-circle"></i> Complaints Management</h2>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="complaints-table">
+        {% if complaints %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Subject</th>
+                    <th>Complainant</th>
+                    <th>Against</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for complaint in complaints %}
+                <tr>
+                    <td>{{ complaint.created_at_formatted }}</td>
+                    <td>{{ complaint.subject }}</td>
+                    <td>
+                        <i class="fas fa-user"></i> {{ complaint.complainant_name }}
+                        <small class="text-muted">({{ complaint.complainant_role }})</small>
+                    </td>
+                    <td>
+                        <i class="fas {% if complaint.against_role == 'pharmacy' %}fa-clinic-medical{% else %}fa-user{% endif %}"></i>
+                        {{ complaint.against_name }}
+                    </td>
+                    <td>
+                        <span class="status-badge status-{{ complaint.status }}">
+                            <i class="fas {% if complaint.status == 'pending' %}fa-clock
+                                        {% elif complaint.status == 'resolved' %}fa-check-circle
+                                        {% elif complaint.status == 'investigating' %}fa-search
+                                        {% else %}fa-times-circle{% endif %}"></i>
+                            {{ complaint.status }}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="{{ url_for('complaint_details', complaint_id=complaint._id) }}" class="btn-action btn-view">
+                            <i class="fas fa-eye"></i> View Details
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-check-circle"></i>
+            <h3>No Complaints Found</h3>
+            <p>There are currently no complaints in the system.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal for viewing complaint details -->
+<div class="modal fade" id="complaintModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Complaint Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="complaintDetailsForm" class="complaint-details-form">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="fw-bold">Submitted On</label>
+                                <div id="submittedDate" class="form-control-static"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="fw-bold">Status</label>
+                                <select class="form-select" id="complaintStatus">
+                                    <option value="pending">Pending</option>
+                                    <option value="investigating">Investigating</option>
+                                    <option value="resolved">Resolved</option>
+                                    <option value="dismissed">Dismissed</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label class="fw-bold">Subject</label>
+                        <div id="complaintSubject" class="form-control-static"></div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="fw-bold">Complainant</label>
+                                <div id="complainantInfo" class="form-control-static"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="fw-bold">Complaint Against</label>
+                                <div id="againstInfo" class="form-control-static"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group mb-4">
+                        <label class="fw-bold">Description</label>
+                        <div id="complaintDescription" class="form-control-static description-box"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="fw-bold">Admin Notes</label>
+                        <textarea id="adminNotes" class="form-control" rows="4" placeholder="Add administrative notes here..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="updateComplaintStatus()">Update Status</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.complaint-details-form .form-control-static {
+    padding: 0.375rem 0.75rem;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    min-height: 38px;
+}
+
+.description-box {
+    white-space: pre-wrap;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.form-group label {
+    margin-bottom: 0.5rem;
+    color: #495057;
+}
+
+.status-label {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+#complaintStatus {
+    background-color: white;
+    border: 1px solid #dee2e6;
+}
+
+.modal-lg {
+    max-width: 800px;
+}
+</style>
+
+<script>
+function viewComplaint(complaintId) {
+    // Show loading state
+    const elements = ['submittedDate', 'complaintSubject', 'complaintDescription', 'complainantInfo', 'againstInfo'];
+    elements.forEach(id => document.getElementById(id).textContent = 'Loading...');
+    document.getElementById('adminNotes').value = '';
+    
+    // Fetch complaint details and show in modal
+    fetch(`/get_complaint_details/${complaintId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Update modal content with complaint details
+            document.getElementById('submittedDate').textContent = data.created_at || 'Not available';
+            document.getElementById('complaintSubject').textContent = data.subject || 'No subject';
+            document.getElementById('complaintDescription').textContent = data.description || 'No description provided';
+            document.getElementById('complainantInfo').textContent = 
+                `${data.complainant_name || 'Unknown'} (${data.complainant_role || 'Unknown role'})`;
+            document.getElementById('againstInfo').textContent = data.against_name || 'Not specified';
+            
+            // Set the current status
+            const statusSelect = document.getElementById('complaintStatus');
+            statusSelect.value = data.status || 'pending';
+            
+            // Set admin notes if they exist
+            document.getElementById('adminNotes').value = data.admin_notes || '';
+            
+            // Store the complaint ID for the update function
+            document.getElementById('complaintDetailsForm').dataset.complaintId = complaintId;
+            
+            // Show the modal
+            var modal = new bootstrap.Modal(document.getElementById('complaintModal'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Error fetching complaint details:', error);
+            // Show error message in the modal
+            elements.forEach(id => document.getElementById(id).textContent = 'Error loading data');
+            document.getElementById('adminNotes').value = 'Error: Could not load complaint details. Please try refreshing the page.';
+            
+            // Show error toast
+            const toastEl = document.createElement('div');
+            toastEl.className = 'toast align-items-center text-white bg-danger border-0 position-fixed bottom-0 end-0 m-3';
+            toastEl.setAttribute('role', 'alert');
+            toastEl.setAttribute('aria-live', 'assertive');
+            toastEl.setAttribute('aria-atomic', 'true');
+            toastEl.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        Error loading complaint details. Please try again.
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            document.body.appendChild(toastEl);
+            const toast = new bootstrap.Toast(toastEl);
+            toast.show();
+            
+            // Still show the modal with error state
+            var modal = new bootstrap.Modal(document.getElementById('complaintModal'));
+            modal.show();
+        });
+}
+
+function updateComplaintStatus() {
+    const form = document.getElementById('complaintDetailsForm');
+    const complaintId = form.dataset.complaintId;
+    const status = document.getElementById('complaintStatus').value;
+    const adminNotes = document.getElementById('adminNotes').value;
+
+    fetch(`/update_complaint_status/${complaintId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            status: status,
+            admin_notes: adminNotes
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Close the modal
+            bootstrap.Modal.getInstance(document.getElementById('complaintModal')).hide();
+            // Refresh the page to show updated status
+            location.reload();
+        } else {
+            alert('Error updating complaint: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error updating complaint:', error);
+        alert('Error updating complaint. Please try again.');
+    });
+}
+</script>
+{% endblock %}

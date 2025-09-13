@@ -1,0 +1,449 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="checkout-container">
+    <h2>Checkout</h2>
+    
+    {% if cart_items %}
+    <div class="checkout-content">
+        <div class="order-summary">
+            <h3>Order Summary</h3>
+            
+            <form action="{{ url_for('checkout') }}" method="POST">
+            <div class="order-items">
+                {% for item in cart_items %}
+                <div class="order-item">
+                    <div class="item-image">
+                        <i class="fas fa-pills"></i>
+                    </div>
+                    
+                    <div class="item-details">
+                        <h4>{{ item.med.name }}</h4>
+                        <p class="item-category">{{ item.med.category }}</p>
+                        <p class="item-price">৳{{ "%.2f"|format(item.med.price) }} × {{ item.qty }}</p>
+                        
+                        {% if item.med.pharmacy_id %}
+                            {% set pharmacy = pharmacies|selectattr("_id", "equalto", item.med.pharmacy_id)|first %}
+                            {% if pharmacy %}
+                            <p class="item-pharmacy">From: {{ pharmacy.name }}</p>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                    
+                    <div class="item-total">
+                        <p class="total-price">৳{{ "%.2f"|format(item.line_total) }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div class="order-totals">
+                <div class="total-row">
+                    <span>Subtotal ({{ cart_items|length }} items):</span>
+                    <span>৳{{ "%.2f"|format(cart_total) }}</span>
+                </div>
+                
+                <div class="total-row">
+                    <span>Delivery Fee:</span>
+                    <span>৳50.00</span>
+                </div>
+                
+                <div class="total-row grand-total">
+                    <span>Total Amount:</span>
+                    <span>৳{{ "%.2f"|format(cart_total + 50) }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="checkout-form">
+            <h3>Delivery Information</h3>
+            
+            <form method="POST" action="{{ url_for('checkout') }}">
+                <div class="form-group">
+                    <label for="address">Delivery Address *</label>
+                    <textarea id="address" name="address" rows="4" placeholder="Enter your complete delivery address" required class="form-input"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="phone">Phone Number *</label>
+                    <input type="tel" id="phone" name="phone" placeholder="Your contact number" required class="form-input">
+                </div>
+                
+                <div class="form-group">
+                    <label for="instructions">Delivery Instructions (Optional)</label>
+                    <textarea id="instructions" name="instructions" rows="3" placeholder="Any special delivery instructions" class="form-input"></textarea>
+                </div>
+                
+                <div class="payment-methods">
+                    <h4>Payment Method</h4>
+                    <div class="payment-options">
+                        <label class="payment-option">
+                            <input type="radio" name="payment_method" value="cash" checked>
+                            <span class="payment-label">
+                                <i class="fas fa-money-bill-wave"></i>
+                                Cash on Delivery
+                            </span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="checkout-actions">
+                    <button type="submit" class="btn btn-primary btn-large">
+                        <i class="fas fa-check-circle"></i> Place Order
+                    </button>
+                    
+                    <a href="{{ url_for('cart_view') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Cart
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    {% else %}
+    <div class="empty-checkout">
+        <div class="empty-icon">
+            <i class="fas fa-shopping-cart"></i>
+        </div>
+        <h3>Your cart is empty</h3>
+        <p>You need to add items to your cart before checkout.</p>
+        <a href="{{ url_for('search') }}" class="btn btn-primary">
+            <i class="fas fa-search"></i> Browse Medicines
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.checkout-container {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    margin: 1rem 0;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.checkout-container h2 {
+    text-align: center;
+    margin-bottom: 2rem;
+    color: #2d3748;
+    font-size: 2rem;
+}
+
+.checkout-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+.order-summary, .checkout-form {
+    background: #f8fafc;
+    padding: 1.5rem;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+}
+
+.order-summary h3, .checkout-form h3 {
+    margin-bottom: 1.5rem;
+    color: #2d3748;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 0.5rem;
+    font-size: 1.3rem;
+}
+
+.order-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 1rem;
+    align-items: center;
+    padding: 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    background: white;
+}
+
+.item-image {
+    font-size: 2rem;
+    color: #667eea;
+}
+
+.item-details h4 {
+    color: #2d3748;
+    margin-bottom: 0.3rem;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.item-category {
+    color: #718096;
+    font-size: 0.8rem;
+    background: #edf2f7;
+    padding: 0.2rem 0.5rem;
+    border-radius: 10px;
+    display: inline-block;
+    margin-bottom: 0.3rem;
+}
+
+.item-price {
+    color: #48bb78;
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin: 0.2rem 0;
+}
+
+.item-pharmacy {
+    color: #667eea;
+    font-size: 0.8rem;
+    margin: 0.2rem 0;
+    font-style: italic;
+}
+
+.total-price {
+    font-weight: bold;
+    color: #2d3748;
+    font-size: 1.1rem;
+}
+
+.order-totals {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.total-row:last-child {
+    border-bottom: none;
+}
+
+.grand-total {
+    font-weight: bold;
+    font-size: 1.2rem;
+    color: #2d3748;
+    margin-top: 0.5rem;
+    padding-top: 1rem;
+    border-top: 2px solid #e2e8f0;
+}
+
+/* Checkout Form */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #4a5568;
+}
+
+.form-input {
+    width: 100%;
+    padding: 0.8rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-family: inherit;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+textarea.form-input {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* Payment Methods */
+.payment-methods {
+    margin: 2rem 0;
+}
+
+.payment-methods h4 {
+    margin-bottom: 1rem;
+    color: #2d3748;
+    font-size: 1.1rem;
+}
+
+.payment-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.payment-option {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.payment-option:hover {
+    border-color: #667eea;
+    background: #f7fafc;
+}
+
+.payment-option input[type="radio"] {
+    margin-right: 1rem;
+    transform: scale(1.2);
+}
+
+.payment-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    color: #4a5568;
+}
+
+/* Checkout Actions */
+.checkout-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.btn {
+    padding: 1rem 2rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.btn-primary {
+    background: #667eea;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #5a67d8;
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: #718096;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #4a5568;
+    transform: translateY(-1px);
+}
+
+.btn-large {
+    padding: 1.2rem 2.5rem;
+    font-size: 1.1rem;
+    flex: 1;
+}
+
+/* Empty Checkout */
+.empty-checkout {
+    text-align: center;
+    padding: 3rem;
+    color: #718096;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    color: #cbd5e0;
+    margin-bottom: 1rem;
+}
+
+.empty-checkout h3 {
+    color: #4a5568;
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+}
+
+.empty-checkout p {
+    margin-bottom: 2rem;
+    font-size: 1.1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .checkout-content {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .checkout-container {
+        padding: 1rem;
+    }
+    
+    .order-item {
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: 0.5rem;
+    }
+    
+    .checkout-actions {
+        flex-direction: column;
+    }
+    
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .order-summary, .checkout-form {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .checkout-container h2 {
+        font-size: 1.5rem;
+    }
+    
+    .order-summary h3, .checkout-form h3 {
+        font-size: 1.1rem;
+    }
+    
+    .payment-options {
+        flex-direction: column;
+    }
+    
+    .form-input {
+        padding: 0.6rem;
+    }
+    
+    .empty-checkout {
+        padding: 2rem 1rem;
+    }
+    
+    .empty-icon {
+        font-size: 3rem;
+    }
+}
+</style>
+{% endblock %}

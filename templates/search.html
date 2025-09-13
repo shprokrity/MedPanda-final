@@ -1,0 +1,414 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="search-container">
+    <h2>Search Medicines</h2>
+    
+    <!-- Search Form -->
+    <form method="GET" action="{{ url_for('search') }}" class="search-form">
+        <div class="search-grid">
+            <!-- Search Input -->
+            <div class="form-group">
+                <label for="q">Medicine Name:</label>
+                <input type="text" id="q" name="q" placeholder="Search medicines..." value="{{ selected.q }}" class="search-input">
+            </div>
+            
+            <!-- Category Filter -->
+            <div class="form-group">
+                <label for="category">Category:</label>
+                <select id="category" name="category" class="filter-select">
+                    <option value="">All Categories</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat }}" {% if selected.category == cat %}selected{% endif %}>{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Pharmacy Filter -->
+            <div class="form-group">
+                <label for="pharmacy">Pharmacy:</label>
+                <select id="pharmacy" name="pharmacy" class="filter-select">
+                    <option value="">All Pharmacies</option>
+                    {% for pharmacy in pharmacies %}
+                    <option value="{{ pharmacy._id }}" {% if selected.pharmacy == pharmacy._id|string %}selected{% endif %}>
+                        {{ pharmacy.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Price Range -->
+            <div class="form-group price-range">
+                <label>Price Range:</label>
+                <div class="price-inputs">
+                    <input type="number" id="min" name="min" placeholder="Min price" value="{{ selected.min }}" step="0.01" min="0" class="price-input">
+                    <span>to</span>
+                    <input type="number" id="max" name="max" placeholder="Max price" value="{{ selected.max }}" step="0.01" min="0" class="price-input">
+                </div>
+            </div>
+            
+            <!-- Search Button -->
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary search-btn">
+                    <i class="fas fa-search"></i> Search
+                </button>
+                <a href="{{ url_for('search') }}" class="btn btn-secondary">Clear Filters</a>
+            </div>
+        </div>
+    </form>
+
+    <!-- Results -->
+    <div class="results-container">
+        <h3>Search Results ({{ meds|length }} found)</h3>
+        
+        {% if meds %}
+        <div class="medicines-grid">
+            {% for med in meds %}
+            <div class="medicine-card">
+                <div class="medicine-image">
+                    <i class="fas fa-pills"></i>
+                </div>
+                <div class="medicine-info">
+                    <h4>{{ med.name }}</h4>
+                    <p class="category">{{ med.category }}</p>
+                    <p class="price">৳{{ "%.2f"|format(med.price) }}</p>
+                    <p class="stock {% if med.stock > 10 %}in-stock{% else %}low-stock{% endif %}">
+                        Stock: {{ med.stock }}
+                    </p>
+                    {% if med.pharmacy_id %}
+                        {% set pharmacy = pharmacies|selectattr("_id", "equalto", med.pharmacy_id)|first %}
+                        {% if pharmacy %}
+                        <p class="pharmacy">{{ pharmacy.name }}</p>
+                        {% endif %}
+                    {% endif %}
+                </div>
+                <div class="medicine-actions">
+                    <form action="{{ url_for('cart_add') }}" method="POST" class="add-to-cart-form">
+                        <input type="hidden" name="med_id" value="{{ med._id }}">
+                        <div class="qty-container">
+                            <label for="qty-{{ med._id }}">Qty:</label>
+                            <input type="number" id="qty-{{ med._id }}" name="qty" value="1" min="1" max="{{ med.stock }}" class="qty-input">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm" {% if med.stock == 0 %}disabled{% endif %}>
+                            <i class="fas fa-cart-plus"></i> 
+                            {% if med.stock == 0 %}Out of Stock{% else %}Add to Cart{% endif %}
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="no-results">
+            <i class="fas fa-search"></i>
+            <h4>No medicines found</h4>
+            <p>Try adjusting your search criteria or browse all medicines.</p>
+            <a href="{{ url_for('search') }}" class="btn btn-primary">View All Medicines</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.search-container {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    margin: 1rem 0;
+}
+
+.search-form {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: #f8fafc;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+}
+
+.search-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr auto;
+    gap: 1rem;
+    align-items: end;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #4a5568;
+    font-size: 0.9rem;
+}
+
+.search-input, .filter-select {
+    width: 100%;
+    padding: 0.8rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 1rem;
+}
+
+.search-input:focus, .filter-select:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.price-range {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.price-inputs {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.price-input {
+    width: 80px;
+    padding: 0.8rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.btn {
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    text-align: center;
+    display: inline-block;
+    text-decoration: none;
+}
+
+.btn-primary {
+    background: #667eea;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #5a67d8;
+}
+
+.btn-secondary {
+    background: #718096;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #4a5568;
+}
+
+.btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+}
+
+.search-btn {
+    white-space: nowrap;
+}
+
+/* Results */
+.results-container h3 {
+    margin-bottom: 1.5rem;
+    color: #2d3748;
+    font-size: 1.3rem;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 0.5rem;
+}
+
+.medicines-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.medicine-card {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.medicine-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.medicine-image {
+    text-align: center;
+    margin-bottom: 1rem;
+    font-size: 3rem;
+    color: #667eea;
+}
+
+.medicine-info h4 {
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.category {
+    color: #718096;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    background: #f7fafc;
+    padding: 0.3rem 0.8rem;
+    border-radius: 15px;
+    display: inline-block;
+}
+
+.price {
+    color: #2d3748;
+    font-size: 1.4rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    color: #48bb78;
+}
+
+.stock {
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.in-stock {
+    color: #38a169;
+}
+
+.low-stock {
+    color: #dd6b20;
+}
+
+.out-of-stock {
+    color: #e53e3e;
+}
+
+.pharmacy {
+    color: #667eea;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 1rem;
+}
+
+.medicine-actions {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.add-to-cart-form {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.qty-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.qty-input {
+    width: 60px;
+    padding: 0.5rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.btn:disabled {
+    background: #cbd5e0;
+    cursor: not-allowed;
+}
+
+.no-results {
+    text-align: center;
+    padding: 3rem;
+    color: #718096;
+}
+
+.no-results i {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    color: #cbd5e0;
+}
+
+.no-results h4 {
+    color: #4a5568;
+    margin-bottom: 1rem;
+}
+
+.no-results p {
+    margin-bottom: 1.5rem;
+    font-size: 1.1rem;
+}
+
+/* Responsive Search */
+@media (max-width: 1024px) {
+    .search-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .search-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .price-inputs {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .price-input {
+        width: 100%;
+    }
+    
+    .medicines-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .add-to-cart-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .qty-container {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .search-container {
+        padding: 1rem;
+    }
+    
+    .search-form {
+        padding: 1rem;
+    }
+    
+    .medicine-card {
+        padding: 1rem;
+    }
+    
+    .btn {
+        padding: 0.6rem 1rem;
+        font-size: 0.9rem;
+    }
+}
+</style>
+{% endblock %}

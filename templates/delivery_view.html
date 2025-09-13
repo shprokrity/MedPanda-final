@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/delivery-view.css') }}">
+<style>
+    .rating-display {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .rating-display .stars {
+        color: #ffc107;
+        font-size: 0.9rem;
+    }
+    
+    .rating-display .rating-text {
+        font-size: 0.8rem;
+        color: #666;
+    }
+    
+    .rating-display .text-warning {
+        color: #ffc107 !important;
+    }
+    
+    .rating-display .text-muted {
+        color: #ddd !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="delivery-view-container">
+    <div class="page-header">
+        <div class="header-content">
+            <h2><i class="fas fa-truck"></i> Delivery Personnel Management</h2>
+            <p>Monitor and manage all delivery personnel from one central dashboard</p>
+        </div>
+        <div class="header-stats">
+            <div class="stat-item">
+                <i class="fas fa-users"></i>
+                <div class="stat-info">
+                    <span class="stat-value">{{ delivery_personnel|length }}</span>
+                    <span class="stat-label">Total Personnel</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="delivery-table">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>License Number</th>
+                    <th>Current Location</th>
+                    <th>Rating</th>
+                    <th>Availability</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for delivery in delivery_personnel %}
+                <tr>
+                    <td class="cell-name">
+                        <i class="fas fa-user-circle"></i> {{ delivery.name }}
+                    </td>
+                    <td class="cell-email">
+                        <a href="mailto:{{ delivery.email }}" data-tooltip="Send email">{{ delivery.email }}</a>
+                    </td>
+                    <td class="cell-phone">
+                        {% if delivery.phone %}
+                            <i class="fas fa-phone"></i> {{ delivery.phone }}
+                        {% else %}
+                            <span class="text-muted">N/A</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if delivery.license_number %}
+                            <span data-tooltip="Verified Driver">
+                                <i class="fas fa-id-card"></i> {{ delivery.license_number }}
+                            </span>
+                        {% else %}
+                            <span class="text-muted">N/A</span>
+                        {% endif %}
+                    </td>
+                    <td class="cell-location">
+                        {% if delivery.current_location %}
+                            <i class="fas fa-map-marker-alt"></i> {{ delivery.current_location }}
+                        {% else %}
+                            <span class="text-muted"><i class="fas fa-question-circle"></i> Location unknown</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="rating-display">
+                            <div class="stars">
+                                {% set avg_rating = delivery.avg_rating|default(0) %}
+                                {% for i in range(5) %}
+                                    <i class="fas fa-star {% if i < avg_rating %}text-warning{% else %}text-muted{% endif %}"></i>
+                                {% endfor %}
+                            </div>
+                            <span class="rating-text">
+                                {{ "%.1f"|format(avg_rating) }}/5 
+                                ({{ delivery.review_count|default(0) }} {{ 'review' if delivery.review_count == 1 else 'reviews' }})
+                            </span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge {% if delivery.is_available %}badge-success{% else %}badge-warning{% endif %}">
+                            <i class="fas {% if delivery.is_available %}fa-check-circle{% else %}fa-clock{% endif %}"></i>
+                            {{ 'Available' if delivery.is_available else 'Busy' }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge {% if delivery.is_active %}badge-success{% else %}badge-danger{% endif %}">
+                            <i class="fas {% if delivery.is_active %}fa-toggle-on{% else %}fa-toggle-off{% endif %}"></i>
+                            {{ 'Active' if delivery.is_active else 'Inactive' }}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="{{ url_for('delivery_dashboard', delivery_id=delivery._id) }}" 
+                           class="btn-view-dashboard">
+                            <i class="fas fa-columns"></i> View Dashboard
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if not delivery_personnel %}
+        <div class="empty-state">
+            <i class="fas fa-truck"></i>
+            <h3>No Delivery Personnel Found</h3>
+            <p>There are currently no delivery personnel registered in the system.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add loading animation
+    const table = document.querySelector('.delivery-table');
+    if (table) {
+        table.style.opacity = '0';
+        setTimeout(() => {
+            table.style.transition = 'opacity 0.3s ease';
+            table.style.opacity = '1';
+        }, 100);
+    }
+
+    // Initialize tooltips if needed
+    const tooltips = document.querySelectorAll('[data-tooltip]');
+    tooltips.forEach(tooltip => {
+        tooltip.addEventListener('mouseenter', e => {
+            const rect = tooltip.getBoundingClientRect();
+            const tooltipText = tooltip.getAttribute('data-tooltip');
+            // You can add custom tooltip implementation here if needed
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <a href="{{ url_for('pharmacy_dashboard') }}" class="btn btn-secondary">← Back to Dashboard</a>
+    <h2>Assign Delivery for Order #{{ order._id }}</h2>
+    
+    <div class="delivery-options">
+        <h3>Available Delivery Persons: {{ delivery_persons|length }}</h3>
+        
+        {% if delivery_persons %}
+        <form action="{{ url_for('request_delivery', order_id=order._id) }}" method="POST">
+            <div class="delivery-list">
+                {% for delivery in delivery_persons %}
+                <div class="delivery-person">
+                    <input type="checkbox" name="delivery_ids" value="{{ delivery.user_id }}" checked>
+                    <h4>Delivery Person {{ loop.index }}</h4>
+                    <p>Vehicle: {{ delivery.vehicle_type }}</p>
+                    <p>Rating: {{ delivery.rating_avg }}/5 ({{ delivery.rating_count }} reviews)</p>
+                    {% if delivery.phone %}<p>Phone: {{ delivery.phone }}</p>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            <button type="submit" class="btn btn-primary">
+                Send Delivery Request to Selected
+            </button>
+        </form>
+        {% else %}
+        <p>No delivery persons available at the moment.</p>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.delivery-list {
+    margin: 20px 0;
+}
+
+.delivery-person {
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin: 10px 0;
+    border-radius: 5px;
+    background: #f9f9f9;
+}
+
+.delivery-person:hover {
+    background: #f0f0f0;
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    margin-bottom: 1rem;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #0056b3;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #545b62;
+}
+</style>
+{% endblock %}

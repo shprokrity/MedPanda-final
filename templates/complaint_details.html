@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Complaint Details{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2 class="mb-0">Complaint Details</h2>
+            <a href="{{ url_for('admin_complaints') }}" class="btn btn-secondary">Back to Complaints</a>
+        </div>
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h5>Submitted On</h5>
+                    <p>{{ complaint.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                </div>
+                <div class="col-md-6">
+                    <h5>Status</h5>
+                    <form method="POST" class="d-flex align-items-center gap-2">
+                        <select name="status" class="form-select" style="max-width: 200px;">
+                            <option value="pending" {% if complaint.status == 'pending' %}selected{% endif %}>Pending</option>
+                            <option value="investigating" {% if complaint.status == 'investigating' %}selected{% endif %}>Investigating</option>
+                            <option value="resolved" {% if complaint.status == 'resolved' %}selected{% endif %}>Resolved</option>
+                            <option value="dismissed" {% if complaint.status == 'dismissed' %}selected{% endif %}>Dismissed</option>
+                        </select>
+                        <button type="submit" class="btn btn-primary">Update Status</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <h5>Subject</h5>
+                <p class="p-3 bg-light rounded">{{ complaint.subject }}</p>
+            </div>
+
+            <div class="mb-4">
+                <h5>Complainant</h5>
+                <p>{{ complaint.complainant_name }} ({{ complaint.complainant_role }})</p>
+            </div>
+
+            <div class="mb-4">
+                <h5>Description</h5>
+                <div class="p-3 bg-light rounded" style="white-space: pre-wrap;">{{ complaint.description }}</div>
+            </div>
+
+            <div class="mb-4">
+                <h5>Admin Notes</h5>
+                <form method="POST" class="mt-2">
+                    <textarea name="admin_notes" class="form-control mb-3" rows="4" placeholder="Add administrative notes here...">{{ complaint.admin_notes }}</textarea>
+                    <button type="submit" class="btn btn-primary">Save Notes</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <a href="{{ url_for('admin_view_pharmacies') }}" class="btn btn-secondary mb-3">
+                <i class="fas fa-arrow-left"></i> Back to Pharmacy List
+            </a>
+            <h2>Pharmacy Details</h2>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Pharmacy Information -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4>Pharmacy Information</h4>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th>Name:</th>
+                            <td>{{ pharmacy.name }}</td>
+                        </tr>
+                        <tr>
+                            <th>License Number:</th>
+                            <td>{{ pharmacy.license_number if pharmacy.license_number else 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Address:</th>
+                            <td>{{ pharmacy.address if pharmacy.address else 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Phone:</th>
+                            <td>{{ pharmacy.phone if pharmacy.phone else 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Email:</th>
+                            <td>{{ pharmacy.email if pharmacy.email else 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Status:</th>
+                            <td>
+                                <span class="badge {% if pharmacy.is_active %}badge-success{% else %}badge-danger{% endif %}">
+                                    {{ 'Active' if pharmacy.is_active else 'Inactive' }}
+                                </span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Owner Information -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4>Owner Information</h4>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th>Name:</th>
+                            <td>{{ pharmacy.owner_name if pharmacy.owner_name else 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Email:</th>
+                            <td>{{ pharmacy.owner_email if pharmacy.owner_email else 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Phone:</th>
+                            <td>{{ pharmacy.owner_phone if pharmacy.owner_phone else 'N/A' }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Medicines List -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Available Medicines</h4>
+                </div>
+                <div class="card-body">
+                    {% if meds %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Description</th>
+                                    <th>Price</th>
+                                    <th>Stock</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for med in meds %}
+                                <tr>
+                                    <td>{{ med.name }}</td>
+                                    <td>{{ med.description if med.description else 'N/A' }}</td>
+                                    <td>${{ "%.2f"|format(med.price) }}</td>
+                                    <td>{{ med.stock }}</td>
+                                    <td>
+                                        <span class="badge {% if med.is_active %}badge-success{% else %}badge-danger{% endif %}">
+                                            {{ 'Available' if med.is_active else 'Not Available' }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No medicines available.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

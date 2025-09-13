@@ -1,0 +1,144 @@
+/* Medicine Catalog Styles */
+.catalog {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    padding: 1rem;
+}
+
+.card {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.medicine-image {
+    width: 100%;
+    height: 200px;
+    overflow: hidden;
+    padding: 1rem;
+    background: #f7fafc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.medicine-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    max-height: 180px;
+}
+
+.medicine-info {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.medicine-info h3 {
+    margin: 0;
+    color: #2d3748;
+    font-size: 1.1rem;
+}
+
+.medicine-info .category {
+    color: #718096;
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.medicine-info .price {
+    color: #4a5568;
+    font-weight: 600;
+    margin: 0;
+}
+
+.medicine-info .stock {
+    color: #718096;
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.add-to-cart-form {
+    margin-top: auto;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.quantity-control {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.quantity-control input {
+    width: 60px;
+    padding: 0.25rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+}
+
+.btn-add-cart {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background-color 0.2s ease;
+}
+
+.btn-add-cart:hover {
+    background: #5a67d8;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .catalog {
+        grid-template-columns: 1fr;
+    }
+    
+    .card {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    
+    .medicine-image {
+        width: 100%;
+        max-width: 200px;
+        height: auto;
+        aspect-ratio: 1;
+    }
+    
+    .add-to-cart-form {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .quantity-control {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .btn-add-cart {
+        width: 100%;
+        justify-content: center;
+    }
+}

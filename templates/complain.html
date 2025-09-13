@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    .complain-container {
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background-color: rgba(255, 255, 255, 0.95);
+        border-radius: 15px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .complain-header {
+        text-align: center;
+        margin-bottom: 2rem;
+        color: #333;
+    }
+
+    .complain-form {
+        background: white;
+        padding: 2rem;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: #495057;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ced4da;
+        border-radius: 5px;
+        font-size: 1rem;
+    }
+
+    .form-control:focus {
+        border-color: #667eea;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.25);
+    }
+
+    textarea.form-control {
+        min-height: 150px;
+        resize: vertical;
+    }
+
+    .btn-submit {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 5px;
+        font-weight: 500;
+        cursor: pointer;
+        width: 100%;
+        transition: all 0.3s ease;
+    }
+
+    .btn-submit:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    #loading-indicator {
+        margin-top: 0.5rem;
+        color: #6c757d;
+        font-size: 0.875rem;
+    }
+
+    #loading-indicator i {
+        margin-right: 0.5rem;
+    }
+
+    #against_id {
+        font-size: 1rem;
+        padding: 0.75rem;
+    }
+
+    #against_id option {
+        padding: 0.5rem;
+    }
+
+    #against_id option:not([value=""]) {
+        font-weight: 500;
+    }
+
+    #against_id:disabled {
+        background-color: #f8f9fa;
+        cursor: not-allowed;
+    }
+
+    .alert {
+        padding: 1rem;
+        border-radius: 5px;
+        margin-bottom: 1rem;
+    }
+
+    .alert-success {
+        background-color: rgba(0, 183, 74, 0.1);
+        color: #00b74a;
+        border: 1px solid rgba(0, 183, 74, 0.2);
+    }
+
+    .alert-error {
+        background-color: rgba(249, 49, 84, 0.1);
+        color: #f93154;
+        border: 1px solid rgba(249, 49, 84, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="complain-container">
+    <div class="complain-header">
+        <h2><i class="fas fa-exclamation-circle"></i> Submit a Complaint</h2>
+        <p>Use this form to report any issues or concerns you have.</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="complain-form">
+        <form method="POST" action="{{ url_for('submit_complain') }}">
+            <div class="form-group">
+                <label for="subject">Subject</label>
+                <input type="text" class="form-control" id="subject" name="subject" required
+                    placeholder="Brief description of your complaint">
+            </div>
+
+            <div class="form-group">
+                <label for="against_role">Complaint Against</label>
+                <select class="form-control" id="against_role" name="against_role" required>
+                    <option value="">Select Role</option>
+                    <option value="pharmacy">Pharmacy</option>
+                    <option value="delivery">Delivery Personnel</option>
+                    <option value="customer">Customer</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="description">Detailed Description</label>
+                <textarea class="form-control" id="description" name="description" required
+                    placeholder="Please provide detailed information about your complaint"></textarea>
+            </div>
+
+            <button type="submit" class="btn-submit">
+                <i class="fas fa-paper-plane"></i> Submit Complaint
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const subject = document.getElementById('subject').value;
+    const role = document.getElementById('against_role').value;
+    const description = document.getElementById('description').value;
+    
+    if (!subject || !role || !description) {
+        e.preventDefault();
+        alert('Please fill in all required fields');
+    }
+});
+</script>
+{% endblock %}

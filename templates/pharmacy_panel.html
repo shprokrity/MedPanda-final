@@ -1,0 +1,422 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="dashboard-container">
+    <h1>Pharmacy Management Panel</h1>
+    <p>Welcome, {{ session.user.name if session.user else pharmacy.name }}! Manage your pharmacy inventory and orders.</p>
+
+    <div class="dashboard-sections">
+        <!-- Inventory Management Section -->
+        <div class="dashboard-section">
+            <h2>Current Inventory</h2>
+            {% if meds %}
+            <div class="inventory-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Medicine Name</th>
+                            <th>Category</th>
+                            <th>Price (BDT)</th>
+                            <th>Current Stock</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for med in meds %}
+                        <tr>
+                            <td>{{ med.name }}</td>
+                            <td>{{ med.category }}</td>
+                            <td>{{ "%.2f"|format(med.price) }}</td>
+                            <td>{{ med.stock }}</td>
+                            <td>
+                                <span class="status-badge {{ 'active' if med.is_active else 'inactive' }}">
+                                    {{ 'Active' if med.is_active else 'Inactive' }}
+                                </span>
+                            </td>
+                            <td>
+                                <form method="post" action="{{ url_for('update_stock', mid=med._id) }}" class="stock-form">
+                                    <div class="form-row">
+                                        <input type="number" name="stock" value="{{ med.stock }}" min="0" 
+                                               placeholder="New stock" required class="stock-input">
+                                        <button type="submit" class="btn btn-sm btn-primary">Update Stock</button>
+                                    </div>
+                                </form>
+                                
+                                <form method="post" action="{{ url_for('pharmacy_update_medicine', mid=med._id) }}" class="status-form">
+                                    <input type="hidden" name="is_active" value="{{ 'false' if med.is_active else 'true' }}">
+                                    <button type="submit" class="btn btn-sm {{ 'btn-warning' if med.is_active else 'btn-success' }}">
+                                        {{ 'Deactivate' if med.is_active else 'Activate' }}
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p>No medicines in your inventory yet.</p>
+            {% endif %}
+        </div>
+
+        <!-- Add New Medicine Section -->
+        <div class="dashboard-section">
+            <h2>Add New Medicine</h2>
+            <form method="post" action="{{ url_for('pharmacy_add_medicine') }}" class="add-medicine-form" enctype="multipart/form-data">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="name">Medicine Name *</label>
+                        <input type="text" id="name" name="name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="category">Category</label>
+                        <input type="text" id="category" name="category" placeholder="e.g., Pain Relief, Antibiotics">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="image">Medicine Image</label>
+                        <input type="file" id="image" name="image" accept="image/*">
+                        <small class="form-text text-muted">Upload an image of the medicine (JPG, PNG)</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="price">Price (BDT) *</label>
+                        <input type="number" id="price" name="price" step="0.01" min="0" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="stock">Initial Stock *</label>
+                        <input type="number" id="stock" name="stock" min="0" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="is_active">Status</label>
+                        <select id="is_active" name="is_active">
+                            <option value="true" selected>Active</option>
+                            <option value="false">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Add Medicine</button>
+            </form>
+        </div>
+
+        <!-- Recent Orders Section -->
+        <div class="dashboard-section">
+            <h2>Recent Orders</h2>
+            {% if orders %}
+            <div class="orders-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Date</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td>#{{ order._id|string|truncate(8, True, '') }}</td>
+                            <td>{{ order.created_at.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ "%.2f"|format(order.total) }} BDT</td>
+                            <td>
+                                <span class="status-badge {{ order.status|lower|replace(' ', '-') }}">
+                                    {{ order.status }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('order_detail', order_id=order._id) }}" class="btn btn-sm btn-info">View</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p>No orders yet.</p>
+            {% endif %}
+        </div>
+
+        <!-- Quick Stats Section -->
+        <div class="dashboard-section">
+            <h2>Pharmacy Overview</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>{{ meds|length }}</h3>
+                    <p>Total Medicines</p>
+                </div>
+                <div class="stat-card">
+                    <h3>{{ meds|selectattr('is_active')|list|length }}</h3>
+                    <p>Active Medicines</p>
+                </div>
+                <div class="stat-card">
+                    <h3>{{ orders|length }}</h3>
+                    <p>Total Orders</p>
+                </div>
+                <div class="stat-card">
+                    <h3>{{ orders|selectattr('status', 'equalto', 'Pending')|list|length }}</h3>
+                    <p>Pending Orders</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .dashboard-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .dashboard-sections {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 30px;
+        margin-top: 30px;
+    }
+
+    .dashboard-section {
+        background: white;
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .inventory-table table,
+    .orders-table table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+
+    .inventory-table th,
+    .inventory-table td,
+    .orders-table th,
+    .orders-table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #eee;
+    }
+
+    .inventory-table th,
+    .orders-table th {
+        background: #f8f9fa;
+        font-weight: 600;
+    }
+
+    .status-badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .status-badge.active {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .status-badge.inactive {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .status-badge.pending {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .status-badge.processing {
+        background: #cce5ff;
+        color: #004085;
+    }
+
+    .status-badge.out-for-delivery {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+
+    .status-badge.delivered {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .stock-form,
+    .status-form {
+        margin-bottom: 8px;
+    }
+
+    .form-row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .stock-input {
+        width: 80px;
+        padding: 4px 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+
+    .btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-sm {
+        padding: 4px 8px;
+        font-size: 12px;
+    }
+
+    .btn-primary {
+        background: #3498db;
+        color: white;
+    }
+
+    .btn-success {
+        background: #28a745;
+        color: white;
+    }
+
+    .btn-warning {
+        background: #ffc107;
+        color: #212529;
+    }
+
+    .btn-info {
+        background: #17a2b8;
+        color: white;
+    }
+
+    .btn-danger {
+        background: #dc3545;
+        color: white;
+    }
+
+    .add-medicine-form {
+        margin-top: 20px;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group label {
+        margin-bottom: 5px;
+        font-weight: 600;
+        color: #2c3e50;
+    }
+
+    .form-group input,
+    .form-group select {
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-top: 15px;
+    }
+
+    .stat-card {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        border-left: 4px solid #3498db;
+    }
+
+    .stat-card h3 {
+        margin: 0;
+        font-size: 24px;
+        color: #2c3e50;
+    }
+
+    .stat-card p {
+        margin: 5px 0 0 0;
+        color: #7f8c8d;
+        font-size: 14px;
+    }
+
+    @media (max-width: 768px) {
+        .dashboard-container {
+            padding: 15px;
+        }
+        
+        .dashboard-section {
+            padding: 15px;
+        }
+        
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .form-row {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .inventory-table table,
+        .orders-table table {
+            font-size: 14px;
+        }
+        
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+</style>
+
+<script>
+    // Add some JavaScript for better UX
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add confirmation for deactivation/activation
+        const statusForms = document.querySelectorAll('.status-form');
+        statusForms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                const button = this.querySelector('button');
+                const action = button.textContent.toLowerCase();
+                if (!confirm(`Are you sure you want to ${action} this medicine?`)) {
+                    e.preventDefault();
+                }
+            });
+        });
+
+        // Add validation for stock updates
+        const stockForms = document.querySelectorAll('.stock-form');
+        stockForms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                const input = this.querySelector('input[name="stock"]');
+                if (input.value < 0) {
+                    e.preventDefault();
+                    alert('Stock cannot be negative');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
