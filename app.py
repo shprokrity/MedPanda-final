@@ -1,8 +1,5 @@
 from __future__ import annotations
-
 # app.py
-# MedPanda — Flask + MongoDB (PyMongo) minimal full app
-# -----------------------------------------------------
 
 from bson.objectid import ObjectId
 import os
@@ -45,14 +42,13 @@ from werkzeug.utils import secure_filename
 import hashlib
 
 
-# -----------------------------
 # App & Database Configuration
-# -----------------------------
+
 def create_app():
     app = Flask(__name__, static_folder="static", template_folder="templates")
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-secret-change-me")
     app.config["UPLOAD_FOLDER"] = os.path.join(app.static_folder, "images", "medicines")
-    app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16MB max file size
+    app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  
     app.config["ALLOWED_EXTENSIONS"] = {"png", "jpg", "jpeg", "gif"}
     
     # Create upload directory if it doesn't exist
@@ -1952,16 +1948,13 @@ def create_app():
         
         return redirect(url_for('cart_view'))
 
-    # ----------------------
     # Schedules / Reminders
-    # ----------------------
     @app.route("/schedules", methods=["GET", "POST", "DELETE"])
     @login_required
     def schedules():
         user_id = ObjectId(session["user"]["_id"])
 
         if request.method == "POST":
-            # Add schedule item
             freq = request.form.get("frequency", "weekly")  # "weekly" or "monthly"
             medicine_names = [s.strip() for s in request.form.get("medicines", "").split(",") if s.strip()]
             notes = request.form.get("notes", "").strip()
@@ -2042,9 +2035,8 @@ def create_app():
             result.append(order_data)
         
         return jsonify(result)
-    # ----------------------
+    
     # Admin Panel
-    # ----------------------
     @app.route("/admin")
     @roles_required("admin")
     def admin_dashboard():
@@ -2266,9 +2258,8 @@ def create_app():
         
         return jsonify({"ok": True, "msg": "User created successfully"})
 
-    # ----------------------
+
     # Lightweight APIs (JSON)
-    # ----------------------
     @app.route("/api/medicines")
     def api_medicines():
         # For AJAX filters
@@ -2283,15 +2274,13 @@ def create_app():
                 m["pharmacy_id"] = str(m["pharmacy_id"])
         return jsonify(meds)
 
-    # Health check
-    # Complaint details route is defined above
 
     # Update complaint status route is defined above
 
     @app.route("/health")
     def health():
         try:
-            # Test MongoDB connection
+            # Testing testing
             app.db.command('ping')
             return jsonify({
                 "status": "healthy",
@@ -2309,9 +2298,7 @@ def create_app():
     return app
 
 
-# -----------------------------
 # Helpers
-# -----------------------------
 def ensure_indexes(db):
     db.users.create_index([("email", ASCENDING)], unique=True)
     db.users.create_index([("role", ASCENDING)])
