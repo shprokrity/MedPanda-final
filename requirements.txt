@@ -3,3 +3,4 @@ Flask-PyMongo==2.3.0
 pymongo==4.8.0
 dnspython==2.6.1
 werkzeug==3.0.3
+gunicorn
